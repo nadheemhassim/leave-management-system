@@ -1,0 +1,41 @@
+version: "3.8"
+
+services:
+  leave-mysql:
+    image: mysql:8.0
+    container_name: leave-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: leaveroot
+      MYSQL_DATABASE: leave_db
+      MYSQL_USER: leave_user
+      MYSQL_PASSWORD: leave_pass
+    volumes:
+      - leave_mysql_data:/var/lib/mysql
+    ports:
+      - "3309:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  leave-backend:
+    build: .
+    container_name: leave-backend
+    restart: always
+    depends_on:
+      leave-mysql:
+        condition: service_healthy
+    ports:
+      - "8090:8090"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://leave-mysql:3306/leave_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: leave_user
+      SPRING_DATASOURCE_PASSWORD: leave_pass
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "true"
+      SERVER_PORT: 8090
+
+volumes:
+  leave_mysql_data:
